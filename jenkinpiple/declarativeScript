@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/CloudDevopsRavina/simple-java-maven-app.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '/opt/maven/bin/mvn test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '/opt/maven/bin/mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh '/opt/maven/bin/mvn package'
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                sh '''
+                docker build -t my-app:latest .
+                '''
+            }
+        }
+        stage('Image Scan - Trivy') {
+    steps {
+        sh '''
+        echo "Scanning Docker image with Trivy..."
+        trivy image my-app:latest
+        '''
+    }
+}
+    }
+}
