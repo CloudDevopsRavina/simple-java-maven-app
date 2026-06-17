@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     stages {
         stage('Checkout') {
             steps {
@@ -71,5 +72,34 @@ pipeline {
                 '''
             }
         }
+        stage('Checkout K8s Repo') {
+    steps {
+           git branch: 'main',
+            url: 'git@github.com:CloudDevopsRavina/kubernetes-project.git'
+        }
+    }
+
+       stage('Update Deployment YAML') {
+    steps {
+             sh '''
+        FILE=day-2-workernode-components/deployment.yml
+
+        sed -i "s|image:.*|image: 383946777397.dkr.ecr.ap-south-1.amazonaws.com/simple-java-maven-app:${BUILD_NUMBER}|g" $FILE
+
+        echo "Updated file:"
+        grep image $FILE
+
+        git config user.name "Jenkins"
+        git config user.email "jenkins@example.com"
+
+        git add day-2-workernode-components/deployment.yml
+
+        git commit -m "Updated image tag to ${BUILD_NUMBER}" || echo "No changes to commit"
+
+        git push origin main
+        '''
+    }
+}
+   
     }
 }
