@@ -100,6 +100,24 @@ pipeline {
         '''
     }
 }
+stage('Cleanup (Docker + Trivy)') {
+    steps {
+        sh '''
+        echo "===== CLEANUP START ====="
+
+        # Docker cleanup
+        docker system prune -af --volumes
+
+        # Trivy cleanup
+        rm -rf ~/.cache/trivy || true
+        rm -rf /root/.cache/trivy || true
+
+        echo "===== CLEANUP DONE ====="
+
+        df -h
+        '''
+    }
+ }
    
     }
 }
